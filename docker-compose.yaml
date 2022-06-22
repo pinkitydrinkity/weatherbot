@@ -1,0 +1,51 @@
+version: '3'
+services:
+  database:
+    # we build our own docker image with custom configurations
+    build:
+      context: docker/mysql
+    # or we use the default mysql docker image with the default configuration
+#    image: mysql:5.7
+    # expose port 3306 so we can connect to the server with desktop applications like MySQL Workbench, DBeaver, Heidi SQL, etc
+    ports:
+    - 3306:3306
+    env_file:
+      - docker/database-root.env  # load the root user password (user root with this password will have full privileges)
+      - docker/database.env       # load application specific user and database 
+    volumes:
+      - ./docker/mysql/sql/:/docker-entrypoint-initdb.d/ # load the sql files from here on database creation
+
+  phpmyadmin:
+    image: phpmyadmin
+    restart: always
+    ports:
+      - 8080:80 # open http://localhost:8080 in your browser to access phpmyadmin console
+    links:
+      - database
+    env_file:
+      - docker/phpmyadmin.env # load environment variables necessary to create the connection to the database container
+
+  php-fpm:
+    # for your php application you need to create a docker image
+    build:
+      dockerfile: docker/php/Dockerfile
+      context: "."
+    image: php-fpm
+    env_file:
+      - docker/database.env # load database configurations to be able to connect to the database
+      # here you can also have more files with env variables for specific purposes
+    ports:
+    - 9000
+    volumes:
+    - ./web:/var/www/html # on local development you need to create this volume to load your local project so you can keep making changes to it
+    # keep in mind, that the Dockerfile will copy the local project into docker context, will build the application and it will store it in the docker image, but with this option here, you'll overwrite the directory with the application from the container.
+
+  php-nginx:
+    build:
+      dockerfile: docker/nginx/Dockerfile
+      context: "."
+    image: php-nginx
+    ports:
+    - 80:80 # open http://localhost in your browser to see the application running
+    volumes:
+    - ./web:/var/www/html

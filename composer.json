@@ -1,0 +1,9 @@
+{
+    "require": {
+        "twig/twig": "^3.3",
+        "kisphp/dbal": "^0.2.0"
+    },
+    "require-dev": {
+        "symfony/var-dumper": "^5.4"
+    }
+}
